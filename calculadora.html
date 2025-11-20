@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mecânica - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.1.3/24/outline/heroicons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --toxic-yellow: #f0dea6;
+            --dark-bg: #0A0A0A;
+            --light-dark-bg: #111111;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: #EAEAEA;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, .nav-link, button {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .toxic-text { color: var(--toxic-yellow); }
+        .toxic-bg { background-color: var(--toxic-yellow); }
+        .toxic-border { border-color: var(--toxic-yellow); }
+        .toxic-shadow { box-shadow: 0 0 20px rgba(196, 204, 85, 0.6); }
+        
+        .nav-link.active {
+            background-color: var(--toxic-yellow);
+            color: black;
+            box-shadow: 0 0 10px rgba(196, 204, 85, 0.7);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--toxic-yellow); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f0dea6; }
+
+        /* Premium Card Effect */
+        .premium-card {
+            background: rgba(17, 17, 17, 0.5);
+            border: 1px solid rgba(196, 204, 85, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            position: relative;
+            border-radius: 1rem;
+        }
+        .premium-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.6);
+        }
+        .premium-card::before {
+            content: '';
+            position: absolute;
+            left: -2px; top: -2px;
+            background: linear-gradient(45deg, #f0dea6, #0a0a0a, #0a0a0a, #f0dea6);
+            background-size: 400%;
+            width: calc(100% + 4px);
+            height: calc(100% + 4px);
+            z-index: -1;
+            animation: steam 15s linear infinite;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            border-radius: 1rem;
+        }
+        .premium-card:hover::before { opacity: 1; }
+        @keyframes steam {
+            0% { background-position: 0 0; }
+            50% { background-position: 400% 0; }
+            100% { background-position: 0 0; }
+        }
+
+        /* Loading Screen */
+        #preloader {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: var(--dark-bg);
+            z-index: 10001;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 1s ease-in-out;
+        }
+        #preloader.loaded { opacity: 0; pointer-events: none; }
+        #preloader-canvas { position: absolute; top: 0; left: 0; }
+        
+        /* Background Canvas */
+        #background-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+        }
+
+        /* Scroll Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 1s cubic-bezier(0.165, 0.84, 0.44, 1), transform 1s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 8px;
+            background: var(--light-dark-bg); outline: none;
+            border-radius: 5px; border: 1px solid rgba(196, 204, 85, 0.2);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 22px; height: 22px;
+            background: var(--toxic-yellow); cursor: pointer;
+            border-radius: 50%; border: 3px solid var(--dark-bg);
+            box-shadow: 0 0 8px var(--toxic-yellow);
+        }
+        
+        /* Car Simulation */
+        #car-road {
+            background: #222;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(196, 204, 85, 0.2);
+        }
+        #car-road::before {
+            content: ''; position: absolute;
+            top: 50%; left: 0;
+            width: 100%; height: 4px;
+            background: repeating-linear-gradient(90deg, #fff, #fff 20px, transparent 20px, transparent 40px);
+            animation: moveRoad 5s linear infinite;
+            transform: translateY(-50%);
+        }
+        @keyframes moveRoad {
+            from { transform: translate(0, -50%); }
+            to { transform: translate(-40px, -50%); }
+        }
+        .skidding { animation: skid 0.4s ease-in-out infinite; }
+        @keyframes skid {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-5px) rotate(-2deg); }
+            75% { transform: translateX(5px) rotate(2deg); }
+        }
+        .credits {
+            transition: color 0.3s ease;
+        }
+        .credits:hover {
+            color: var(--toxic-yellow);
+        }
+        
+        /* Aula Accordion */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Tela de Carregamento -->
+    <div id="preloader">
+        <canvas id="preloader-canvas"></canvas>
+    </div>
+    
+    <!-- Fundo Dinâmico -->
+    <canvas id="background-canvas"></canvas>
+
+    <div class="min-h-screen flex flex-col lg:flex-row relative z-10">
+        <!-- Navegação Lateral -->
+        <nav class="bg-black/30 backdrop-blur-sm border-r border-white/10 p-4 lg:w-64 flex flex-col">
+            <div class="flex items-center justify-center mb-12">
+                <img src="https://media.discordapp.net/attachments/1335636493104054293/1441081068026331237/logo_mec_yellow.png?ex=69207ed4&is=691f2d54&hm=c7c4e77008468859ae015dc45649db0f4cac73894931662b071bf12d775ca66e&=&format=webp&quality=lossless" alt="Logo" class="h-24">
+            </div>
+            <ul class="flex-grow">
+                <li><a href="#" class="nav-link block text-lg font-bold p-4 rounded-lg mb-2 transition-all duration-300 hover:bg-yellow-500/20 active" data-page="home">Início</a></li>
+                <li><a href="#" class="nav-link block text-lg font-bold p-4 rounded-lg mb-2 transition-all duration-300 hover:bg-yellow-500/20" data-page="aulas">Aulas</a></li>
+                <li><a href="#" class="nav-link block text-lg font-bold p-4 rounded-lg mb-2 transition-all duration-300 hover:bg-yellow-500/20" data-page="remap">Remap</a></li>
+                <li><a href="#" class="nav-link block text-lg font-bold p-4 rounded-lg mb-2 transition-all duration-300 hover:bg-yellow-500/20" data-page="tabela">Tabela</a></li>
+                <li><a href="#" class="nav-link block text-lg font-bold p-4 rounded-lg mb-2 transition-all duration-300 hover:bg-yellow-500/20" data-page="calculator">Calculadora</a></li>
+            </ul>
+            <div class="text-center text-xs text-gray-600 p-4 credits">
+                <p>desenvolvido com 💚 e ☕ por Vitor Lazerri e atualizado por Careca.Log</p>
+            </div>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            
+            <!-- Página Home -->
+            <div id="home" class="page">
+                <div class="text-center flex flex-col justify-center items-center h-full">
+                     <div class="premium-card p-10 rounded-2xl reveal">
+                        <h1 class="text-5xl md:text-7xl font-black toxic-text tracking-widest">RACE MECÂNICA</h1>
+                        <p class="mt-4 text-xl text-gray-300">Acelere seus sonhos. Performance e Estilo no limite.</p>
+                    </div>
+                    <div class="mt-12 grid md:grid-cols-3 gap-8 w-full max-w-6xl">
+                        <!-- Card 1: Veículos Proibidos -->
+                        <div class="premium-card p-6 rounded-2xl reveal" style="transition-delay: 100ms;">
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/20 mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2 text-red-400">Veículos Restritos</h3>
+                            <p class="text-gray-400 text-sm">Proibido fazer alterações em veículos da prefeitura, como viaturas, veículos de mecânica e OAB.</p>
+                        </div>
+                        <!-- Card 2: Regras de Preço -->
+                        <div class="premium-card p-6 rounded-2xl reveal" style="transition-delay: 200ms;">
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-500/20 mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-yellow-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2 text-yellow-400">Valores da Tabela</h3>
+                            <p class="text-gray-400 text-sm">É proibido cobrar valores acima ou abaixo da tabela. Infrações podem resultar em wipe ou banimento.</p>
+                        </div>
+                        <!-- Card 3: Dúvidas e Contato -->
+                        <div class="premium-card p-6 rounded-2xl reveal" style="transition-delay: 300ms;">
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-500/20 mx-auto mb-4">
+                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-white-400"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2 text-white-400">Dúvidas e Suporte</h3>
+                            <p class="text-gray-400 text-sm">Problemas que fujam do RP podem ser relatados aos auxiliares ou resps.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Página Aulas -->
+            <div id="aulas" class="page hidden">
+                <h1 class="text-4xl font-bold mb-8 toxic-text reveal">Central de Treinamento</h1>
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <!-- Aula 1: Remap -->
+                    <div class="premium-card rounded-2xl reveal">
+                        <div class="accordion-header p-6 cursor-pointer flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Aula 1: A Arte do Remap</h2>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 transition-transform"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                        <div class="accordion-content px-6">
+                            <div class="pb-6 text-gray-300 space-y-3">
+                                <p>O Remap é o serviço mais completo de performance. Ele inclui a ativação do <strong class="toxic-text">Turbo</strong>, a instalação de <strong class="toxic-text">Pops & Bangs</strong> (estouros no escapamento) e o ajuste da <strong class="toxic-text">Wastegate</strong> (válvula de alívio).</p>
+                                <p>O segredo é o equilíbrio. Use o nosso Simulador de Remap para entender como cada ajuste afeta o carro. Lembre-se:</p>
+                                <ul class="list-disc list-inside pl-4 space-y-2">
+                                    <li><strong class="text-white">Potência (Torque/Aceleração):</strong> Define sua velocidade. Pode maximizar, mas só se o carro tiver bom controle.</li>
+                                    <li><strong class="text-white">Controle (Ângulo/Aderência):</strong> Define sua dirigibilidade. Ajustes pequenos aqui fazem grande diferença. Exagerar no ângulo ou na aderência pode tornar o carro incontrolável.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Aula 2: Avaliação -->
+                    <div class="premium-card rounded-2xl reveal">
+                        <div class="accordion-header p-6 cursor-pointer flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Aula 2: Avaliação de Veículos</h2>
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 transition-transform"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                        <div class="accordion-content px-6">
+                             <div class="pb-6 text-gray-300 space-y-3">
+                                <p>Avaliar um veículo é entender a necessidade do cliente. Faça as perguntas certas:</p>
+                                <ul class="list-disc list-inside pl-4 space-y-2">
+                                    <li>"Você sente o carro lento na arrancada ou na velocidade final?" - <strong class="text-white">Sugestão: Motor, Turbo, Transmissão.</strong></li>
+                                    <li>"O carro está instável nas curvas?" - <strong class="text-white">Sugestão: Suspensão, Aderência.</strong></li>
+                                    <li>"Ele demora para frear?" - <strong class="text-white">Sugestão: Freios.</strong></li>
+                                </ul>
+                                <p class="pt-2"><strong class="text-yellow-400">Ponto de Atenção:</strong> A <strong class="text-white">Blindagem</strong> adiciona muito peso ao veículo. Um carro blindado SEMPRE precisará de melhorias no motor e freios para compensar e manter um bom desempenho.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Aula 3: Conduta -->
+                    <div class="premium-card rounded-2xl reveal">
+                        <div class="accordion-header p-6 cursor-pointer flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Aula 3: Código de Conduta</h2>
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 transition-transform"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                        <div class="accordion-content px-6">
+                             <div class="pb-6 text-gray-300 space-y-3">
+                                <p>Somos a elite. Nosso comportamento reflete a qualidade do nosso serviço. Regras são inegociáveis:</p>
+                                <ul class="list-disc list-inside pl-4 space-y-2">
+                                    <li><strong class="text-white">Atendimento ao Cliente:</strong> Seja sempre cordial, paciente e educativo. Explique os serviços. Um cliente satisfeito sempre volta.</li>
+                                    <li><strong class="text-white">Ambiente de Trabalho:</strong> Sem "zaralho" ou brincadeiras que possam danificar veículos ou atrapalhar o trabalho. Foco e profissionalismo.</li>
+                                    <li><strong class="text-red-500">Uso do Uniforme:</strong> O uniforme é para ser usado APENAS em serviço, com ponto batido. Andar pela cidade uniformizado sem estar trabalhando é passível de punição.</li>
+                                    <li><strong class="text-red-500">Abuso de Poderes:</strong> Usar comandos como /h para benefício próprio ou de forma indevida é falta grave e resulta em punições severas.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página Remap -->
+            <div id="remap" class="page hidden">
+                 <h1 class="text-4xl font-bold mb-8 toxic-text reveal">Simulador de Remap</h1>
+                <div class="space-y-8">
+                    <div class="premium-card p-6 rounded-2xl reveal">
+                        <h2 class="text-2xl font-bold mb-4">Guia de Remap: Do Básico ao Pro</h2>
+                        <p class="mb-4 text-gray-400">Remapear um carro é uma arte. O objetivo é encontrar o equilíbrio perfeito entre potência e controle. Um ajuste errado pode transformar um supercarro em um "sabão" incontrolável. Siga estas dicas:</p>
+                        <ul class="space-y-3 text-gray-300">
+                            <li><strong class="text-white">Torque e Aceleração:</strong> Estes são seus medidores de <span class="toxic-text">potência bruta</span>. Para máxima velocidade e arrancada, você pode levá-los ao limite. Carros com mais torque saem na frente, enquanto maior aceleração garante velocidade final.</li>
+                            <li><strong class="text-white">Força de Frenagem:</strong> Segurança em primeiro lugar. Um freio mais forte permite que você entre em curvas com mais velocidade e corrija erros rapidamente. Pode deixar no <span class="toxic-text">máximo</span> sem medo.</li>
+                            <li><strong class="text-white">Ângulo de Viragem:</strong> <span class="text-yellow-400">CUIDADO!</span> Este é o ajuste mais sensível. Aumentar um pouco (5 a 10 pontos do padrão) deixa o carro mais ágil. Aumentar demais faz o carro girar em alta velocidade e <span class="text-red-500 font-bold">risco de capotar</span>.</li>
+                            <li><strong class="text-white">Aderência nas Curvas:</strong> Complementa o ângulo. Mais aderência "gruda" o carro no chão. Assim como o ângulo, um excesso pode deixar o carro <span class="text-yellow-400">rígido e imprevisível</span>, fazendo-o deslizar subitamente em vez de derrapar de forma controlada.</li>
+                        </ul>
+                    </div>
+
+                    <div id="remap-setup" class="premium-card p-6 rounded-2xl reveal">
+                        <h2 class="text-2xl font-bold mb-2">Parâmetros do Veículo</h2>
+                        <p class="mb-6 text-gray-300">Informe os valores <span class="font-bold toxic-text">atuais</span> para calibrar o simulador.</p>
+                        <form id="remap-form" class="space-y-4">
+                            <input type="number" id="std-torque" placeholder="Torque Atual" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors" step="0.01" required>
+                            <input type="number" id="std-aceleracao" placeholder="Aceleração Atual" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors" step="0.01" required>
+                            <input type="number" id="std-angulo" placeholder="Ângulo Atual" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors" step="1" required>
+                            <input type="number" id="std-frenagem" placeholder="Frenagem Atual" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors" step="0.01" required>
+                            <input type="number" id="std-aderencia" placeholder="Aderência Atual" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors" step="0.01" required>
+                            <div class="pt-2">
+                                <button type="submit" class="w-full toxic-bg text-black font-bold py-3 px-4 rounded-lg hover:opacity-80 transition-all duration-300 toxic-shadow">Gerar Simulação</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="remap-interactive-panel" class="hidden">
+                        <!-- Conteúdo do painel interativo será injetado aqui pelo JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Página Tabela -->
+            <div id="tabela" class="page hidden">
+                 <h1 class="text-4xl font-bold mb-8 toxic-text reveal">Tabelas de Preços</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="premium-card p-4 rounded-2xl reveal">
+                        <img src="https://i.imgur.com/rNCP1Rc.png" alt="Tabela de Preços 1" class="rounded-lg w-full" onerror="this.onerror=null;this.src='https://placehold.co/600x400/0A0A0A/EAEAEA?text=Imagem+Nao+Encontrada';">
+                    </div>
+                    <div class="premium-card p-4 rounded-2xl reveal" style="transition-delay: 150ms;">
+                        <img src="https://i.imgur.com/25HbR4Y.png" alt="Tabela de Preços 2" class="rounded-lg w-full" onerror="this.onerror=null;this.src='https://placehold.co/600x400/0A0A0A/EAEAEA?text=Imagem+Nao+Encontrada';">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página Calculadora -->
+            <div id="calculator" class="page hidden">
+                <h1 class="text-4xl font-bold mb-8 toxic-text reveal">Calculadora de Serviços</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="premium-card p-6 rounded-2xl reveal">
+                            <h2 class="text-2xl font-bold mb-4">Dados do Cliente</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="text" id="mec-name" placeholder="Nome do Mecânico" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors">
+                                <input type="text" id="client-id" placeholder="Passaporte (ID) do Cliente" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors">
+                            </div>
+                            <div class="mt-4">
+                                <label for="role-select" class="block text-lg mb-2 text-white-400">Cargo / Desconto</label>
+                                <select id="role-select" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500/50 transition-colors">
+                                    <option value="0">Cliente Comum / Sem Desconto</option>
+                                    <option value="10">01 - Lideranças (10% OFF)</option>
+                                    <option value="20">02 - Membros (20% OFF)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="premium-card p-6 rounded-2xl reveal" style="transition-delay: 150ms;">
+                            <h2 class="text-2xl font-bold mb-4">Selecionar Serviços</h2>
+                            <div id="services-list" class="space-y-4"></div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="premium-card p-6 rounded-2xl sticky top-8 reveal" style="transition-delay: 300ms;">
+                            <h2 class="text-2xl font-bold mb-4">Resumo do Pedido</h2>
+                            <div class="mb-4">
+                                <p class="text-lg">Total:</p>
+                                <p id="total-price" class="text-4xl font-black toxic-text">R$ 0,00</p>
+                                <p id="discount-info" class="text-sm text-white-400 h-5"></p>
+                            </div>
+                            <button id="generate-summary" class="w-full toxic-bg text-black font-bold py-3 px-4 rounded-lg hover:opacity-80 transition-all duration-300 toxic-shadow mb-4">Gerar Resumo</button>
+                            <textarea id="summary-output" class="w-full h-64 bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-yellow-500" readonly placeholder="Seu resumo aparecerá aqui..."></textarea>
+                            <button id="copy-summary" class="w-full mt-2 bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-all duration-300">Copiar</button>
+                            <div id="copy-feedback" class="text-center mt-2 text-white-400 opacity-0 transition-opacity">Copiado!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- EFEITOS VISUAIS MODERNOS ---
+            const preloader = document.getElementById('preloader');
+            const preloaderCanvas = document.getElementById('preloader-canvas');
+            const pCtx = preloaderCanvas.getContext('2d');
+            const bgCanvas = document.getElementById('background-canvas');
+            const bgCtx = bgCanvas.getContext('2d');
+            let particles = [];
+            let particleAnimationTime = 0;
+
+            function setupCanvas(canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            setupCanvas(preloaderCanvas);
+            setupCanvas(bgCanvas);
+
+            class Particle {
+                constructor(x, y) {
+                    this.x = Math.random() * preloaderCanvas.width;
+                    this.y = Math.random() * preloaderCanvas.height;
+                    this.size = Math.random() * 2 + 1;
+                    this.baseX = x; this.baseY = y;
+                    this.density = (Math.random() * 30) + 1;
+                }
+                draw() {
+                    const glow = Math.sin(particleAnimationTime * 0.05 + this.y * 0.1) * 0.5 + 0.5;
+                    pCtx.fillStyle = `rgba(196, 204, 85, ${glow})`;
+                    pCtx.shadowColor = 'var(--toxic-yellow)';
+                    pCtx.shadowBlur = 5;
+                    pCtx.beginPath();
+                    pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    pCtx.closePath(); pCtx.fill();
+                    pCtx.shadowBlur = 0;
+                }
+                update() {
+                    let dx = this.baseX - this.x;
+                    let dy = this.baseY - this.y;
+                    this.x += dx / 20;
+                    this.y += dy / 20;
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                const img = new Image();
+                img.crossOrigin = "anonymous"; 
+                img.src = 'https://media.discordapp.net/attachments/1335636493104054293/1441081068026331237/logo_mec_yellow.png?ex=69207ed4&is=691f2d54&hm=c7c4e77008468859ae015dc45649db0f4cac73894931662b071bf12d775ca66e&=&format=webp&quality=lossless'; // LOGO ATUALIZADA
+                img.onload = () => {
+                    if (img.width === 0 || preloaderCanvas.width === 0) {
+                        setTimeout(initParticles, 100);
+                        return;
+                    }
+
+                    const scale = 0.5;
+                    const imgWidth = img.width * scale;
+                    const imgHeight = img.height * scale;
+                    const x = (preloaderCanvas.width - imgWidth) / 2;
+                    const y = (preloaderCanvas.height - imgHeight) / 2;
+                    pCtx.drawImage(img, x, y, imgWidth, imgHeight);
+                    try {
+                        const data = pCtx.getImageData(0, 0, preloaderCanvas.width, preloaderCanvas.height).data;
+                        pCtx.clearRect(0, 0, preloaderCanvas.width, preloaderCanvas.height);
+                        for (let y = 0; y < preloaderCanvas.height; y += 4) {
+                            for (let x = 0; x < preloaderCanvas.width; x += 4) {
+                                if (data[(y * 4 * preloaderCanvas.width) + (x * 4) + 3] > 128) {
+                                    particles.push(new Particle(x, y));
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Erro ao carregar partículas da imagem:", e);
+                        pCtx.clearRect(0, 0, preloaderCanvas.width, preloaderCanvas.height);
+                        pCtx.drawImage(img, x, y, imgWidth, imgHeight);
+                    }
+                };
+                img.onerror = () => {
+                    console.error("Falha ao carregar a imagem da logo.");
+                }
+            }
+
+            function animatePreloader() {
+                if (!preloader.classList.contains('loaded')) {
+                    pCtx.clearRect(0, 0, preloaderCanvas.width, preloaderCanvas.height);
+                    particleAnimationTime++;
+                    particles.forEach(p => { p.draw(); p.update(); });
+                    requestAnimationFrame(animatePreloader);
+                }
+            }
+            initParticles();
+            animatePreloader();
+
+            setTimeout(() => { preloader.classList.add('loaded'); }, 2500);
+
+            let time = 0;
+            function animateBg() {
+                bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+                bgCtx.globalCompositeOperation = 'lighter';
+                let x = bgCanvas.width / 2 + Math.sin(time * 0.001) * bgCanvas.width * 0.3;
+                let y = bgCanvas.height / 2 + Math.cos(time * 0.0012) * bgCanvas.height * 0.3;
+                let grad = bgCtx.createRadialGradient(x, y, 0, x, y, bgCanvas.width * 0.4);
+                grad.addColorStop(0, 'rgba(196, 204, 85, 0.1)');
+                grad.addColorStop(1, 'rgba(196, 204, 85, 0)');
+                bgCtx.fillStyle = grad;
+                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+                time++;
+                requestAnimationFrame(animateBg);
+            }
+            animateBg();
+
+            const scrollElements = document.querySelectorAll('.reveal');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            scrollElements.forEach(el => observer.observe(el));
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.getAttribute('data-page');
+                    pages.forEach(page => page.classList.add('hidden'));
+                    document.getElementById(pageId).classList.remove('hidden');
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+                });
+            });
+            
+            // --- Lógica do Acordeão de Aulas ---
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
+            accordionHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('svg');
+
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        // Fecha todos os outros
+                        document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = null);
+                        document.querySelectorAll('.accordion-header svg').forEach(i => i.style.transform = 'rotate(0deg)');
+                        
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.style.transform = 'rotate(180deg)';
+                    }
+                });
+            });
+
+            // --- Lógica do Simulador de Remap ---
+            const remapPanelContainer = document.getElementById('remap-interactive-panel');
+            const remapForm = document.getElementById('remap-form');
+            const maxValues = { torque: 0.6, aceleracao: 1.1, angulo: 80, frenagem: 5.1, aderencia: 6.3 };
+            let userStandardValues = {};
+
+            if(remapForm) {
+                remapForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    userStandardValues = {
+                        torque: parseFloat(document.getElementById('std-torque').value),
+                        aceleracao: parseFloat(document.getElementById('std-aceleracao').value),
+                        angulo: parseFloat(document.getElementById('std-angulo').value),
+                        frenagem: parseFloat(document.getElementById('std-frenagem').value),
+                        aderencia: parseFloat(document.getElementById('std-aderencia').value)
+                    };
+                    const suggestion = {
+                        torque: maxValues.torque,
+                        aceleracao: maxValues.aceleracao,
+                        angulo: Math.min(maxValues.angulo, userStandardValues.angulo + 7),
+                        frenagem: maxValues.frenagem,
+                        aderencia: Math.min(maxValues.aderencia, userStandardValues.aderencia + 0.3).toFixed(2)
+                    };
+
+                    remapPanelContainer.innerHTML = `
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="premium-card p-6 rounded-2xl reveal is-visible">
+                                <h2 class="text-2xl font-bold mb-4">Sugestão de Configuração</h2>
+                                <div id="remap-suggestion" class="bg-gray-900 p-4 rounded-md border border-gray-700 space-y-1">
+                                    ${Object.entries(suggestion).map(([key, value]) => `<p><span class="font-semibold text-white capitalize">${key}:</span> <span class="toxic-text">${value}</span></p>`).join('')}
+                                </div>
+                                <button id="back-to-setup" class="w-full mt-4 bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-all duration-300">Inserir Novos Dados</button>
+                            </div>
+                            <div class="premium-card p-6 rounded-2xl reveal is-visible" style="transition-delay: 150ms;">
+                                <h2 class="text-2xl font-bold mb-4">Painel Interativo</h2>
+                                <div class="space-y-4">
+                                    <div><label for="torque" class="flex justify-between font-semibold"><span>Torque</span> <span id="torque-value" class="toxic-text"></span></label><input type="range" id="torque" min="0" step="0.01" class="remap-slider"></div>
+                                    <div><label for="aceleracao" class="flex justify-between font-semibold"><span>Aceleração</span> <span id="aceleracao-value" class="toxic-text"></span></label><input type="range" id="aceleracao" min="0" step="0.01" class="remap-slider"></div>
+                                    <div><label for="angulo" class="flex justify-between font-semibold"><span>Ângulo</span> <span id="angulo-value" class="toxic-text"></span></label><input type="range" id="angulo" min="0" step="1" class="remap-slider"></div>
+                                    <div><label for="frenagem" class="flex justify-between font-semibold"><span>Frenagem</span> <span id="frenagem-value" class="toxic-text"></span></label><input type="range" id="frenagem" min="0" step="0.01" class="remap-slider"></div>
+                                    <div><label for="aderencia" class="flex justify-between font-semibold"><span>Aderência</span> <span id="aderencia-value" class="toxic-text"></span></label><input type="range" id="aderencia" min="0" step="0.01" class="remap-slider"></div>
+                                    <div class="mt-6 text-center"><button id="reset-remap" class="w-full toxic-bg text-black font-bold py-2 px-4 rounded-lg hover:opacity-80 transition-all duration-300 toxic-shadow">Resetar para Padrão</button></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 premium-card p-6 rounded-2xl reveal is-visible lg:col-span-2" style="transition-delay: 300ms;">
+                            <h2 class="text-2xl font-bold mb-4 text-center">Simulação de Pista</h2>
+                            <div id="car-road" class="w-full h-32 rounded-lg flex items-center justify-center relative">
+                                <div id="sim-car" class="w-24 h-12">
+                                    <svg viewBox="0 0 120 50" fill="currentColor" class="text-green-400"><path d="M117.2,22.8l-12.5-0.2c-1.5-3.8-5.3-6.5-9.8-6.5H73.3c-2.3,0-4.4,0.9-6,2.4l-11.2-12C54.7,5.1,52.5,4,50,4H14.4 c-4.5,0-8.3,2.7-9.8,6.5L2.8,22.8c-2.8,0.7-4.8,3.2-4.8,6.2v1.5c0,3.5,2.8,6.3,6.3,6.3h2.6c1,4.4,5,7.7,9.8,7.7s8.8-3.3,9.8-7.7 h50.5c1,4.4,5,7.7,9.8,7.7s8.8-3.3,9.8-7.7h2.6c3.5,0,6.3-2.8,6.3-6.3v-1.5C122,26,120,23.5,117.2,22.8z M21.3,38.5 c-3.5,0-6.3-2.8-6.3-6.3s2.8-6.3,6.3-6.3s6.3,2.8,6.3,6.3S24.8,38.5,21.3,38.5z M98.7,38.5c-3.5,0-6.3-2.8-6.3-6.3 s2.8-6.3,6.3-6.3s6.3,2.8,6.3,6.3S102.2,38.5,98.7,38.5z M74.7,21.5l-3.3-3.3c-0.6-0.6-1.5-0.6-2.1,0L54.4,33.1H31.5 c-0.8,0-1.5-0.7-1.5-1.5s0.7-1.5,1.5-1.5h19.2L65.6,15c1.2-1.2,2.8-1.8,4.5-1.8h21.7c3.1,0,5.8,2,6.9,4.8L74.7,21.5z"></path></svg>
+                                </div>
+                            </div>
+                            <p id="sim-feedback" class="text-center mt-4 text-lg font-semibold toxic-text h-6">Ajuste os controles para ver o resultado.</p>
+                        </div>
+                    `;
+
+                    for (const key in maxValues) {
+                        const slider = document.getElementById(key);
+                        slider.max = maxValues[key]; slider.min = 0;
+                        slider.value = userStandardValues[key];
+                    }
+                    
+                    document.getElementById('remap-setup').classList.add('hidden');
+                    remapPanelContainer.classList.remove('hidden');
+                    
+                    attachRemapPanelListeners();
+                    updateRemapValues();
+                });
+            }
+            
+            function attachRemapPanelListeners() {
+                document.getElementById('back-to-setup').addEventListener('click', () => {
+                    remapPanelContainer.classList.add('hidden');
+                    document.getElementById('remap-setup').classList.remove('hidden');
+                });
+
+                document.querySelectorAll('.remap-slider').forEach(slider => slider.addEventListener('input', updateRemapValues));
+                
+                document.getElementById('reset-remap').addEventListener('click', () => {
+                    for (const key in userStandardValues) {
+                        document.getElementById(key).value = userStandardValues[key];
+                    }
+                    updateRemapValues();
+                });
+            }
+
+            function updateRemapValues() {
+                document.querySelectorAll('.remap-slider').forEach(slider => {
+                    document.getElementById(`${slider.id}-value`).textContent = slider.value;
+                });
+                updateSimulation();
+            }
+
+            function updateSimulation() {
+                const torque = parseFloat(document.getElementById('torque').value);
+                const aceleracao = parseFloat(document.getElementById('aceleracao').value);
+                const angulo = parseInt(document.getElementById('angulo').value);
+                const aderencia = parseFloat(document.getElementById('aderencia').value);
+                const frenagem = parseFloat(document.getElementById('frenagem').value);
+                const simCar = document.getElementById('sim-car');
+                const road = document.getElementById('car-road');
+                const simFeedback = document.getElementById('sim-feedback');
+
+                // Lógica de simulação otimizada
+                const powerScore = (torque / maxValues.torque * 0.4) + (aceleracao / maxValues.aceleracao * 0.6);
+                
+                const idealAngle = userStandardValues.angulo + 10;
+                const angleScore = 1 - Math.min(1, Math.abs(angulo - idealAngle) / 30);
+                
+                const idealAdherence = userStandardValues.aderencia + 0.3;
+                const adherenceScore = 1 - Math.min(1, Math.abs(aderencia - idealAdherence) / 2);
+
+                const brakeScore = frenagem / maxValues.frenagem;
+
+                const controlScore = (angleScore * 0.5) + (adherenceScore * 0.4) + (brakeScore * 0.1);
+
+                road.style.animationDuration = `${Math.max(0.2, 1.5 - powerScore * 1.3)}s`;
+                
+                const isUnstable = (controlScore < 0.65 && powerScore > 0.5) || (angulo > userStandardValues.angulo + 25 && powerScore > 0.7);
+                simCar.classList.toggle('skidding', isUnstable);
+
+                let feedbackText = "";
+                if (angulo > userStandardValues.angulo + 25 && powerScore > 0.7) {
+                    feedbackText = "PERIGO: Risco de capotar em alta velocidade!";
+                } else if (aderencia < userStandardValues.aderencia * 0.7) {
+                    feedbackText = "Carro 'sabão'! Sem aderência nenhuma.";
+                } else if (angulo < userStandardValues.angulo * 0.8) {
+                    feedbackText = "Direção dura, o carro quase não vira.";
+                } else if (frenagem < userStandardValues.frenagem * 0.7) {
+                    feedbackText = "Frenagem perigosa, distância muito longa!";
+                } else if (powerScore > 0.8 && controlScore < 0.7) {
+                    feedbackText = "Muita potência, pouco controle. Cuidado!";
+                } else if (powerScore > 0.9 && controlScore > 0.85) {
+                    feedbackText = "Performance de corrida otimizada!";
+                } else if (powerScore > 0.7) {
+                    feedbackText = "Boa combinação de potência e controle.";
+                } else if (powerScore < 0.4) {
+                    feedbackText = "Motor fraco, resposta lenta.";
+                } else if (controlScore > 0.9 && powerScore < 0.5) {
+                    feedbackText = "Extremamente estável, mas lento. Parece um tanque.";
+                } else {
+                    feedbackText = "Configuração balanceada.";
+                }
+                simFeedback.textContent = feedbackText;
+            }
+
+            // --- Lógica da Calculadora ---
+            const services = {
+                insumos: [
+                    { id: 'kit_mecanica', name: 'Kit Mecânica', price: 25000 },
+                    { id: 'pneus', name: 'Pneus', price: 15000 },
+                    { id: 'martelinho', name: 'Martelinho de Ouro', price: 50000 },
+                ],
+                performance: [
+                    { id: 'full_tuning', name: 'Full Tuning', price: 350000, includes: ['motor', 'transmissao', 'suspensao', 'freio', 'turbo'] },
+                    { id: 'motor', name: 'Motor', type: 'select', options: [{name: 'Nível 1', price: 20000}, {name: 'Nível 2', price: 40000}, {name: 'Nível 3', price: 80000}, {name: 'Nível 4', price: 100000}] },
+                    { id: 'transmissao', name: 'Transmissão', type: 'select', options: [{name: 'Nível 1', price: 60000}, {name: 'Nível 2', price: 80000}, {name: 'Nível 3', price: 100000}] },
+                    { id: 'suspensao', name: 'Suspensão', type: 'select', options: [{name: 'Nível 1', price: 20000}, {name: 'Nível 2', price: 40000}, {name: 'Nível 3', price: 80000}, {name: 'Nível 4', price: 100000}] },
+                    { id: 'freio', name: 'Freio', type: 'select', options: [{name: 'Nível 1', price: 20000}, {name: 'Nível 2', price: 60000}, {name: 'Nível 3', price: 80000}] },
+                    { id: 'turbo', name: 'Turbo', price: 50000 },
+                    { id: 'remap_servico', name: 'Remap', price: 500000 },
+                    { id: 'suspensao_ar', name: 'Suspensão a AR', price: 1000000 },
+                ],
+                seguranca: [
+                    { id: 'full_blindagem', name: 'Full Blindagem', price: 1500000, includes: ['blindagem_item', 'pneu_blindado'] },
+                    { id: 'blindagem_item', name: 'Blindagem', price: 600000 },
+                    { id: 'pneu_blindado', name: 'Blindagem de Pneu', price: 900000 },
+                    { id: 'rastreador', name: 'Rastreador', price: 2000000 },
+                ],
+                estetica: [
+                    { id: 'neon', name: 'Neon', price: 25000 },
+                    { id: 'xenon', name: 'Xenon', price: 25000 },
+                    { id: 'cor_neon', name: 'Cor do Neon', price: 15000 },
+                    { id: 'cor_xenon', name: 'Cor do Xenon', price: 15000 },
+                    ...['Aerofólio', 'Buzina', 'Capô', 'Escapamento', 'Grade', 'Parachoque Dianteiro', 'Parachoque Traseiro', 'Pintura', 'Perolado', 'Cor do Painel', 'Cor da Roda', 'Cor do Interior', 'Pelicula', 'Saia Lateral', 'Paralama', 'Teto', 'Placa'].map(name => ({ id: name.toLowerCase().replace(/ /g, '_'), name, price: 10000 }))
+                ]
+            };
+            const allServices = [...services.insumos, ...services.performance, ...services.seguranca, ...services.estetica];
+
+            const servicesListContainer = document.getElementById('services-list');
+            for (const category in services) {
+                const title = document.createElement('h3');
+                title.className = 'text-xl font-bold toxic-text mt-6 first:mt-0 capitalize';
+                title.textContent = category === 'insumos' ? 'Serviços Básicos' : category.replace('_', ' de ');
+                servicesListContainer.appendChild(title);
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4';
+                services[category].forEach(service => {
+                    let itemHTML = '';
+                    if (service.type === 'select') {
+                        itemHTML = `
+                            <div class="flex flex-col">
+                                <label for="service-${service.id}" class="mb-1 text-gray-300">${service.name}</label>
+                                <select id="service-${service.id}" data-id="${service.id}" class="service-item w-full h-[50px] bg-gray-800/50 border border-gray-700 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-yellow-500">
+                                    <option value="0">Não selecionado</option>
+                                    ${service.options.map(opt => `<option value="${opt.price}">${opt.name} - ${formatCurrency(opt.price)}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    } else {
+                         // CORREÇÃO: Checkbox com estrutura igual ao Select (h-50px, título fora)
+                         itemHTML = `
+                            <div class="flex flex-col">
+                                <label for="service-${service.id}" class="mb-1 text-gray-300">${service.name}</label>
+                                <div class="w-full h-[50px] bg-gray-800/50 border border-gray-700 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-gray-800 transition-colors" onclick="document.getElementById('service-${service.id}').click()">
+                                    <span class="text-gray-500 text-sm select-none">Aplicar</span>
+                                    <input type="checkbox" id="service-${service.id}" data-id="${service.id}" class="service-item cursor-pointer form-checkbox h-5 w-5 text-white-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500">
+                                </div>
+                            </div>
+                        `;
+                    }
+                    grid.innerHTML += itemHTML;
+                });
+                servicesListContainer.appendChild(grid);
+            }
+            
+            function formatCurrency(value) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); }
+
+            function handleServiceDependencies(changedElement) {
+                const changedId = changedElement.dataset.id;
+                
+                // --- LÓGICA 1: O ITEM CLICADO É UM PACOTE ---
+                const pkg = allServices.find(s => s.id === changedId && s.includes);
+                if (pkg) {
+                    const isPackageChecked = changedElement.checked;
+                    // Atualiza todos os filhos para refletir o estado do pacote
+                    pkg.includes.forEach(childId => {
+                        const childEl = document.getElementById(`service-${childId}`);
+                        if (childEl) {
+                            if (childEl.tagName === 'SELECT') {
+                                // Se o pacote foi marcado, seleciona a última (melhor) opção. Se não, reseta.
+                                childEl.selectedIndex = isPackageChecked ? childEl.options.length - 1 : 0;
+                                childEl.disabled = isPackageChecked;
+                            } else { // Checkbox
+                                childEl.checked = isPackageChecked;
+                                childEl.disabled = isPackageChecked;
+                            }
+                        }
+                    });
+                }
+                
+                // --- LÓGICA 2: O ITEM CLICADO É UM FILHO ---
+                allServices.filter(s => s.includes).forEach(pkg => {
+                    if (pkg.includes.includes(changedId)) {
+                        const pkgCheckbox = document.getElementById(`service-${pkg.id}`);
+                        
+                        const allChildrenOn = pkg.includes.every(childId => {
+                            const childEl = document.getElementById(`service-${childId}`);
+                            if (!childEl) return false;
+                            if (childEl.tagName === 'SELECT') {
+                                return childEl.selectedIndex === childEl.options.length - 1; // Nível máximo
+                            }
+                            return childEl.checked; // Checkbox marcado
+                        });
+
+                        pkgCheckbox.checked = allChildrenOn;
+                    }
+                });
+
+                calculateTotal();
+            }
+
+            function calculateTotal() {
+                let total = 0;
+                
+                // Pega o valor do desconto selecionado no dropdown (0, 10 ou 20)
+                const discountPercent = parseInt(document.getElementById('role-select').value) || 0;
+                
+                document.querySelectorAll('.service-item').forEach(item => {
+                    let price = 0;
+                    const service = allServices.find(s => s.id === item.dataset.id);
+
+                    if (!service) return;
+
+                    if (item.tagName === 'SELECT' && item.value !== '0') {
+                        price = parseFloat(item.value);
+                    } else if (item.tagName === 'INPUT' && item.checked) {
+                        price = service.price;
+                    }
+
+                    if (price > 0) {
+                        const isChildOfSelectedPackage = allServices.some(pkg => pkg.includes && pkg.includes.includes(service.id) && document.getElementById(`service-${pkg.id}`).checked);
+
+                        if (!isChildOfSelectedPackage) {
+                            // Soma o preço cheio primeiro
+                            total += price;
+                        }
+                    }
+                });
+
+                // Aplica o desconto no total final
+                if (discountPercent > 0) {
+                    total = total * ((100 - discountPercent) / 100);
+                }
+
+                document.getElementById('total-price').textContent = formatCurrency(total);
+                
+                // Texto de informação sobre o desconto
+                let discountText = '';
+                if (discountPercent === 10) discountText = 'Desconto de Liderança (10%) aplicado!';
+                if (discountPercent === 20) discountText = 'Desconto de Membro (20%) aplicado!';
+                document.getElementById('discount-info').textContent = discountText;
+            }
+            
+            function resetCalculator() {
+                document.querySelectorAll('.service-item').forEach(item => {
+                    if (item.tagName === 'SELECT') {
+                        item.selectedIndex = 0;
+                    } else {
+                        item.checked = false;
+                    }
+                    item.disabled = false;
+                });
+                document.getElementById('mec-name').value = '';
+                document.getElementById('client-id').value = '';
+                document.getElementById('role-select').value = '0';
+                document.getElementById('summary-output').value = '';
+                calculateTotal();
+            }
+
+            document.querySelectorAll('.service-item').forEach(item => item.addEventListener('change', (e) => handleServiceDependencies(e.target)));
+            document.getElementById('role-select').addEventListener('change', calculateTotal);
+            
+            document.getElementById('generate-summary').addEventListener('click', () => {
+                const mecName = document.getElementById('mec-name').value || '[Não informado]';
+                const clientId = document.getElementById('client-id').value || '[Não informado]';
+                const total = document.getElementById('total-price').textContent;
+                
+                // Informações do Cargo/Desconto
+                const roleSelect = document.getElementById('role-select');
+                const discountPercent = parseInt(roleSelect.value);
+                const roleName = roleSelect.options[roleSelect.selectedIndex].text;
+
+                let servicesText = '';
+                
+                document.querySelectorAll('.service-item:checked:not(:disabled), .service-item:not(input)[value]:not([value="0"]):not(:disabled)').forEach(item => {
+                    const service = allServices.find(s => s.id === item.dataset.id);
+                    if (service) {
+                        let price = 0;
+                        let serviceName = service.name;
+                        if (item.tagName === 'SELECT') {
+                            price = parseFloat(item.value);
+                            serviceName = `${service.name} (${item.options[item.selectedIndex].text.split(' - ')[0]})`;
+                        } else {
+                            price = service.price;
+                        }
+                        // Mostra o preço base do serviço no resumo
+                        servicesText += `- ${serviceName}: ${formatCurrency(price)}\n`;
+                    }
+                });
+
+                if (!servicesText) servicesText = 'Nenhum serviço selecionado.\n';
+
+                const timestamp = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
+                let summary = `**ORDEM DE SERVIÇO**\n\n` +
+                    `🧑‍🔧 **Mecânico:** ${mecName}\n` +
+                    `🆔 **Passaporte:** ${clientId}\n` +
+                    `--------------------------------\n` +
+                    `**SERVIÇOS REALIZADOS:**\n${servicesText}` +
+                    `--------------------------------\n`;
+                
+                if (discountPercent > 0) {
+                    summary += `🔰 **Cargo/Desconto:** ${roleName}\n`;
+                }
+
+                summary += `💰 **TOTAL FINAL:** ${total}\n\n*Gerado em: ${timestamp}*`;
+                document.getElementById('summary-output').value = summary;
+            });
+
+            document.getElementById('copy-summary').addEventListener('click', () => {
+                const summaryText = document.getElementById('summary-output');
+                if(!summaryText.value) return;
+                summaryText.select();
+                try {
+                    document.execCommand('copy');
+                    const feedback = document.getElementById('copy-feedback');
+                    feedback.style.opacity = '1';
+                    setTimeout(() => { 
+                        feedback.style.opacity = '0'; 
+                        resetCalculator();
+                    }, 2000);
+                } catch (err) { console.error('Falha ao copiar texto: ', err); }
+            });
+        });
+    </script>
+</body>
+</html>
